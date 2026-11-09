@@ -696,11 +696,15 @@ async def wake_page(request: web.Request) -> web.Response:
 async def catch_all(request: web.Request) -> web.StreamResponse:
     s = request.app[SESSION]
     s.touch()
-    if request.path in ("/", "/index.html"):
-        if request.app[SETTINGS].auto_stop.wake_on_visit and s.machine.state == State.SLEEPING:
+    ready = s.machine.state == State.READY
+    # `/` is always the gate shell. `/index.html` is that shell until ready, then
+    # the ComfyUI document the shell iframes. Proxying `/` would replace the shell.
+    # Serving the shell at `/index.html` while ready would nest another wake page.
+    if request.path == "/" or (request.path == "/index.html" and not ready):
+        if request.path == "/" and request.app[SETTINGS].auto_stop.wake_on_visit and s.machine.state == State.SLEEPING:
             await s.wake(None, by=_ident(request).email, ip=get_client_ip(request))
         return await wake_page(request)
-    if s.machine.state == State.READY:
+    if ready:
         try:
             return await request.app[PROXY].handle(request)
         except Exception as e:  # noqa: BLE001
