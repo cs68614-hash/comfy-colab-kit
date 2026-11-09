@@ -1586,10 +1586,10 @@ function render(){
    const b=$("bg"),g=document.querySelector(".grid");
    if(b)b.style.display="none";if(g)g.style.display="none";
   }
-  const targetUrl=S.backend_url||"";
-  if(targetUrl&&(!frame.src||frame.src==="about:blank"||!frame.src.startsWith(targetUrl))){
-   frame.src=targetUrl;
-  }
+  // Same-origin document. COLAB_TUNNEL_HOST is service-token-only; the existing
+  // proxy attaches that token. Set src once so a ComfyUI history change is not reloaded.
+  const raw=frame.getAttribute("src")||"";
+  if(!raw||raw==="about:blank")frame.src="/index.html";
   frame.style.display="block";
   document.title=`ComfyUI · ${curP||"Kit"}`;
 
